@@ -1,55 +1,29 @@
-import Database from 'better-sqlite3';
+import { Pool, PoolClient } from 'pg';
 import path from 'path';
-import fs from 'fs';
 
-const DB_DIR = path.join(__dirname, '..', 'data');
-const DB_PATH = path.join(DB_DIR, 'surveys.db');
-
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+// Load .env when running in development
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+  } catch { /* dotenv optional */ }
 }
 
-const db = new Database(DB_PATH);
+const pool = new Pool({
+  host:     process.env.DB_HOST     || 'localhost',
+  port:     parseInt(process.env.DB_PORT || '5432', 10),
+  database: process.env.DB_NAME     || 'site_survey',
+  user:     process.env.DB_USER     || 'survey_user',
+  password: process.env.DB_PASSWORD || 'survey_pass_2024',
+  ssl:      process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  max:      10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS surveys (
-    id TEXT PRIMARY KEY,
-    data TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-  );
-`);
+pool.on('error', (err) => {
+  console.error('Unexpected PostgreSQL pool error', err);
+});
 
-export interface SurveyRow {
-  id: string;
-  data: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export function getAllSurveys(): SurveyRow[] {
-  const stmt = db.prepare('SELECT * FROM surveys ORDER BY updated_at DESC');
-  return stmt.all() as SurveyRow[];
-}
-
-export function getSurveyById(id: string): SurveyRow | undefined {
-  const stmt = db.prepare('SELECT * FROM surveys WHERE id = ?');
-  return stmt.get(id) as SurveyRow | undefined;
-}
-
-export function insertSurvey(id: string, data: string, now: string): void {
-  const stmt = db.prepare(
-    'INSERT INTO surveys (id, data, created_at, updated_at) VALUES (?, ?, ?, ?)'
-  );
-  stmt.run(id, data, now, now);
-}
-
-export function updateSurvey(id: string, data: string, now: string): boolean {
-  const stmt = db.prepare(
-    'UPDATE surveys SET data = ?, updated_at = ? WHERE id = ?'
-  );
-  const result = stmt.run(data, now, id);
-  return result.changes > 0;
-}
-
-export default db;
+export { pool };
+export type { PoolClient };
