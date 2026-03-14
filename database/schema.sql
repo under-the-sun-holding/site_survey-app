@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS surveys (
   site_name       VARCHAR(255) NOT NULL,
   site_address    TEXT,
   -- Spatial column — WGS-84 geographic point (lon, lat)
-  location        GEOMETRY(POINT, 4326),
+  location        GEOGRAPHY(POINT, 4326),
   latitude        DOUBLE PRECISION,
   longitude       DOUBLE PRECISION,
   gps_accuracy    DOUBLE PRECISION,

@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "Site Survey",
+    "slug": "site-survey-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a56db"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sitesurvey.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Site Survey needs your location to record GPS coordinates for each survey.",
+        "NSCameraUsageDescription": "Site Survey needs camera access to capture site photos.",
+        "NSPhotoLibraryUsageDescription": "Site Survey needs photo library access to attach photos to surveys."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a56db"
+      },
+      "package": "com.sitesurvey.mobile",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Site Survey needs your location to record GPS coordinates."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Site Survey needs photo library access.",
+          "cameraPermission": "Site Survey needs camera access."
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:3001"
+    }
+  }
+}
