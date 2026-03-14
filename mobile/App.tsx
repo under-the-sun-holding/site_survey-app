@@ -12,9 +12,16 @@ import { StatusBar }  from 'expo-status-bar';
 import { useDatabase } from './src/hooks/useDatabase';
 import { initSyncManager, teardownSyncManager } from './src/services/SyncManager';
 import AppNavigator   from './src/navigation/AppNavigator';
+import { API_URL }    from './src/api/client';
 
 export default function App() {
   const { ready, error, deviceId } = useDatabase();
+
+  // Log the backend URL at startup so developers can verify the IP is correct
+  // when opening the app in Expo Go. Visible in the Metro bundler terminal.
+  useEffect(() => {
+    console.log(`Connecting to Backend at: ${API_URL}`);
+  }, []);
 
   // Initialise the background sync manager once the DB is ready
   useEffect(() => {

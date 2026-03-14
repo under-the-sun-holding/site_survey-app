@@ -1,0 +1,91 @@
+# docker-compose.yml
+#
+# Local development stack for the Site Survey application.
+#
+# Services
+# ────────
+#   db       — PostgreSQL 16 with PostGIS 3.4
+#              Auto-initialises the schema on first boot via
+#              database/schema.sql mounted as an init script.
+#
+#   backend  — Node.js 20 Express API built from backend/Dockerfile
+#              Depends on the db service and communicates with it via
+#              the internal "survey_net" bridge network (host: db).
+#
+# Quick-start
+# ───────────
+#   Start everything:          docker compose up --build
+#   Start DB only (for local dev):  docker compose up -d db
+#   Stop and remove volumes:   docker compose down -v
+#
+# Notes
+# ─────
+#   • The backend production image is built from backend/Dockerfile.
+#     For hot-reload development use "npm run dev:local" instead, which
+#     starts only the DB in Docker and runs the backend via ts-node-dev.
+#   • Uploaded files are persisted in the "uploads" named volume so
+#     they survive container restarts.
+
+services:
+
+  # ── PostgreSQL 16 + PostGIS 3.4 ────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: site_survey_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       site_survey
+      POSTGRES_USER:     survey_user
+      POSTGRES_PASSWORD: survey_pass_2024
+    ports:
+      # Expose port 5432 on the host so local tools (psql, DBeaver)
+      # can connect directly during development.
+      - "5432:5432"
+    volumes:
+      # Init script — runs automatically when the DB is first created.
+      # PostgreSQL executes all *.sql files in /docker-entrypoint-initdb.d/
+      # in lexicographic order on a fresh data directory.
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      # Persist database files across restarts
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - survey_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U survey_user -d site_survey"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ── Express backend ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: site_survey_backend
+    restart: unless-stopped
+    env_file:
+      # Uses the Docker-specific env file so DB_HOST=db (not localhost)
+      - ./backend/.env.docker
+    ports:
+      - "3001:3001"
+    volumes:
+      # Persist uploaded photos across container rebuilds
+      - uploads:/app/uploads
+    networks:
+      - survey_net
+    depends_on:
+      db:
+        condition: service_healthy
+
+# ── Named volumes ───────────────────────────────────────────
+volumes:
+  db_data:
+    driver: local
+  uploads:
+    driver: local
+
+# ── Networks ────────────────────────────────────────────────
+networks:
+  survey_net:
+    driver: bridge
