@@ -9,7 +9,9 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:mobile": "npm run start --prefix mobile",
 
-    "dev:local": "docker compose up -d db && concurrently --names \"backend,mobile\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run start --prefix mobile\"",
+    "setup:local": "node scripts/setup-local.js",
+
+    "dev:local": "node scripts/setup-local.js && npm install --prefix backend && npm install --prefix mobile && docker compose up -d --wait db && concurrently --names \"backend,mobile\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run start --prefix mobile\"",
     "dev:docker": "docker compose up --build",
 
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
