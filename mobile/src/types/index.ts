@@ -129,16 +129,6 @@ export interface ApiPhotoUploadResponse {
 }
 
 // ------------------------------------------------------------------
-// Navigation
-// ------------------------------------------------------------------
-
-export type RootStackParamList = {
-  Home:      undefined;
-  NewSurvey: undefined;
-  ViewSurvey: { surveyId: string };
-};
-
-// ------------------------------------------------------------------
 // Default checklist items for new surveys
 // ------------------------------------------------------------------
 export const DEFAULT_CHECKLIST: Omit<ChecklistItem, 'id' | 'survey_id' | 'created_at'>[] = [

@@ -11,21 +11,12 @@ import {
   View, Text, ScrollView, Image, TouchableOpacity,
   ActivityIndicator, Alert, StyleSheet, SafeAreaView,
 } from 'react-native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList, Survey } from '../types';
+import { useLocalSearchParams } from 'expo-router';
+import type { Survey } from '../types';
 import { getSurveyById } from '../database/surveyDb';
 import { syncPending, isOnline } from '../services/SyncManager';
 import { fetchReport, downloadReportMarkdown } from '../api/client';
 import type { EngineeringReport } from '../api/client';
-
-type NavProp = NativeStackNavigationProp<RootStackParamList, 'ViewSurvey'>;
-type RoutT   = RouteProp<RootStackParamList, 'ViewSurvey'>;
-
-interface Props {
-  navigation: NavProp;
-  route:      RoutT;
-}
 
 const SYNC_COLORS: Record<string, string> = {
   pending: '#f59e0b', syncing: '#2563eb', synced: '#16a34a', error: '#dc2626',
@@ -34,8 +25,9 @@ const STATUS_COLORS: Record<string, string> = {
   pass: '#16a34a', fail: '#dc2626', 'n/a': '#6b7280', pending: '#f59e0b',
 };
 
-export default function ViewSurveyScreen({ navigation, route }: Props) {
-  const { surveyId } = route.params;
+export default function ViewSurveyScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const surveyId = String(id ?? '');
   const [survey,   setSurvey]   = useState<Survey | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [syncing,  setSyncing]  = useState(false);
@@ -46,7 +38,17 @@ export default function ViewSurveyScreen({ navigation, route }: Props) {
   const [reportExpanded,  setReportExpanded]  = useState(false);
   const [markdownLoading, setMarkdownLoading] = useState(false);
 
+  useEffect(() => {
+    if (!surveyId) {
+      Alert.alert('Error', 'Missing survey id');
+      setLoading(false);
+    }
+  }, [surveyId]);
+
   const loadSurvey = useCallback(async () => {
+    if (!surveyId) {
+      return;
+    }
     try {
       const s = await getSurveyById(surveyId);
       setSurvey(s);
@@ -513,4 +515,73 @@ const styles = StyleSheet.create({
   },
   syncBtnDisabled: { backgroundColor: '#93c5fd' },
   syncBtnText:     { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+
+  reportBtn: {
+    backgroundColor: '#0f766e',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 12,
+    minHeight: 52,
+    justifyContent: 'center',
+  },
+  reportBtnDisabled: { backgroundColor: '#99f6e4' },
+  reportBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+});
+
+const reportStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  title: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  dismiss: { fontSize: 18, color: '#6b7280', fontWeight: '700' },
+  riskBadge: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  riskText: { fontSize: 13, fontWeight: '700' },
+  section: { marginTop: 8 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8 },
+  flagRow: {
+    borderLeftWidth: 3,
+    paddingLeft: 10,
+    marginBottom: 8,
+  },
+  flagPriority: { fontSize: 12, fontWeight: '700', marginBottom: 2 },
+  flagMessage: { fontSize: 13, color: '#374151', lineHeight: 18 },
+  noFlags: { fontSize: 13, color: '#16a34a', fontWeight: '600', marginTop: 8 },
+  rec: { fontSize: 13, color: '#374151', lineHeight: 18, marginBottom: 4 },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  summaryCell: { flex: 1, alignItems: 'center' },
+  summaryCount: { fontSize: 18, fontWeight: '800' },
+  summaryLabel: { fontSize: 11, color: '#6b7280', marginTop: 2 },
+  downloadBtn: {
+    marginTop: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  downloadBtnDisabled: { opacity: 0.6 },
+  downloadBtnText: { color: '#1d4ed8', fontWeight: '700', fontSize: 14 },
 });

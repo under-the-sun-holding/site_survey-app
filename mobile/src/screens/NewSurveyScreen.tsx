@@ -17,8 +17,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, Alert, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../types';
+import { useRouter } from 'expo-router';
 import { DEFAULT_CHECKLIST, SURVEY_CATEGORIES } from '../types';
 import type { SurveyMetadata } from '../types';
 import { createSurvey } from '../database/surveyDb';
@@ -27,15 +26,11 @@ import GPSCapture        from '../components/GPSCapture';
 import ChecklistEditor, { type ChecklistItemDraft } from '../components/ChecklistEditor';
 import PhotoCapture,     { type PhotoDraft }        from '../components/PhotoCapture';
 import SolarMetadataForm from '../components/SolarMetadataForm';
+import { useAppBootstrap } from '../context/AppBootstrapContext';
 
-type NavProp = NativeStackNavigationProp<RootStackParamList, 'NewSurvey'>;
-
-interface Props {
-  navigation: NavProp;
-  deviceId:   string;
-}
-
-export default function NewSurveyScreen({ navigation, deviceId }: Props) {
+export default function NewSurveyScreen() {
+  const router = useRouter();
+  const { deviceId } = useAppBootstrap();
   // ── Form state ────────────────────────────────────────────────
   const [projectName,    setProjectName]    = useState('');
   const [categoryIdx,    setCategoryIdx]    = useState(0);
@@ -100,7 +95,7 @@ export default function NewSurveyScreen({ navigation, deviceId }: Props) {
         },
         deviceId
       );
-      navigation.goBack();
+      router.back();
     } catch (saveErr) {
       Alert.alert('Save Error', saveErr instanceof Error ? saveErr.message : String(saveErr));
     } finally {
@@ -249,7 +244,7 @@ export default function NewSurveyScreen({ navigation, deviceId }: Props) {
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={styles.cancelBtn}
-              onPress={() => navigation.goBack()}
+              onPress={() => router.back()}
               disabled={saving}
             >
               <Text style={styles.cancelBtnText}>Cancel</Text>

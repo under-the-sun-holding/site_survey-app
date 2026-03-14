@@ -14,22 +14,18 @@ import {
 } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing   from 'expo-sharing';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList, Survey } from '../types';
+import { useFocusEffect, useRouter } from 'expo-router';
+import type { Survey } from '../types';
 import { getAllSurveys } from '../database/surveyDb';
 import { useSyncManager } from '../hooks/useSyncManager';
 import { API_URL }         from '../api/client';
 import SyncStatusBar       from '../components/SyncStatusBar';
 import SurveyCard          from '../components/SurveyCard';
+import { useAppBootstrap } from '../context/AppBootstrapContext';
 
-type NavProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
-
-interface Props {
-  navigation: NavProp;
-  dbReady:    boolean;
-}
-
-export default function HomeScreen({ navigation, dbReady }: Props) {
+export default function HomeScreen() {
+  const router = useRouter();
+  const { ready: dbReady } = useAppBootstrap();
   const [surveys,      setSurveys]      = useState<Omit<Survey, 'checklist' | 'photos'>[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
@@ -58,10 +54,11 @@ export default function HomeScreen({ navigation, dbReady }: Props) {
   }, [loadSurveys]);
 
   // Reload when the screen is navigated back to
-  useEffect(() => {
-    const unsub = navigation.addListener('focus', loadSurveys);
-    return unsub;
-  }, [navigation, loadSurveys]);
+  useFocusEffect(
+    useCallback(() => {
+      loadSurveys();
+    }, [loadSurveys])
+  );
 
   // ----------------------------------------------------------------
   // Export GeoJSON — download from server, share via system sheet
@@ -169,7 +166,7 @@ export default function HomeScreen({ navigation, dbReady }: Props) {
         renderItem={({ item }) => (
           <SurveyCard
             survey={item}
-            onPress={() => navigation.navigate('ViewSurvey', { surveyId: item.id })}
+            onPress={() => router.push({ pathname: '/survey/[id]', params: { id: item.id } })}
           />
         )}
       />
@@ -177,7 +174,7 @@ export default function HomeScreen({ navigation, dbReady }: Props) {
       {/* Floating action button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('NewSurvey')}
+        onPress={() => router.push('/new-survey')}
         accessibilityLabel="New survey"
       >
         <Text style={styles.fabText}>＋</Text>
