@@ -5,6 +5,42 @@ import { fetchCurrentUser, forgotPassword, register, resetPassword, signIn, type
 // Bump key version to invalidate stale sessions after auth flow rollout.
 const AUTH_TOKEN_KEY = 'site-survey.auth.token.v2';
 
+async function getStoredToken(): Promise<string | null> {
+  if (!AsyncStorage || typeof AsyncStorage.getItem !== 'function') {
+    return null;
+  }
+
+  try {
+    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+async function setStoredToken(token: string): Promise<void> {
+  if (!AsyncStorage || typeof AsyncStorage.setItem !== 'function') {
+    return;
+  }
+
+  try {
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch {
+    // Ignore persistence failures; auth can still proceed in-memory.
+  }
+}
+
+async function clearStoredToken(): Promise<void> {
+  if (!AsyncStorage || typeof AsyncStorage.removeItem !== 'function') {
+    return;
+  }
+
+  try {
+    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // Ignore persistence failures.
+  }
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
@@ -24,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const signOut = useCallback(async () => {
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await clearStoredToken();
     setToken(null);
     setUser(null);
   }, []);
@@ -34,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function restoreSession() {
       try {
-        const savedToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+        const savedToken = await getStoredToken();
         if (!savedToken) return;
 
         const currentUser = await fetchCurrentUser(savedToken);
@@ -42,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(savedToken);
         setUser(currentUser);
       } catch {
-        await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+        await clearStoredToken();
       } finally {
         if (mounted) setLoading(false);
       }
@@ -56,14 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithPassword = useCallback(async (identifier: string, password: string) => {
     const result = await signIn(identifier, password);
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, result.token);
+    await setStoredToken(result.token);
     setToken(result.token);
     setUser(result.user);
   }, []);
 
   const registerWithPassword = useCallback(async (email: string, password: string, fullName: string) => {
     const result = await register({ email, password, fullName });
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, result.token);
+    await setStoredToken(result.token);
     setToken(result.token);
     setUser(result.user);
   }, []);
