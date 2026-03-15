@@ -23,10 +23,12 @@ import { API_URL }         from '../api/client';
 import SyncStatusBar       from '../components/SyncStatusBar';
 import SurveyCard          from '../components/SurveyCard';
 import { useAppBootstrap } from '../context/AppBootstrapContext';
+import { useAuth }         from '../context/AuthContext';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { ready: dbReady } = useAppBootstrap();
+  const { signOut } = useAuth();
   const [surveys,      setSurveys]      = useState<Omit<Survey, 'checklist' | 'photos'>[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
@@ -133,16 +135,21 @@ export default function HomeScreen() {
       {/* Toolbar */}
       <View style={styles.toolbar}>
         <Text style={styles.title}>Site Surveys</Text>
-        <TouchableOpacity
-          style={[styles.exportBtn, (!sync.isOnline || exporting) && styles.exportBtnDisabled]}
-          onPress={handleExportGeoJSON}
-          disabled={!sync.isOnline || exporting}
-        >
-          {exporting
-            ? <ActivityIndicator size="small" color="#ffffff" />
-            : <Text style={styles.exportBtnText}>⬇ GeoJSON</Text>
-          }
-        </TouchableOpacity>
+        <View style={styles.toolbarActions}>
+          <TouchableOpacity
+            style={[styles.exportBtn, (!sync.isOnline || exporting) && styles.exportBtnDisabled]}
+            onPress={handleExportGeoJSON}
+            disabled={!sync.isOnline || exporting}
+          >
+            {exporting
+              ? <ActivityIndicator size="small" color="#ffffff" />
+              : <Text style={styles.exportBtnText}>⬇ GeoJSON</Text>
+            }
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutBtn} onPress={() => { signOut().catch(console.error); }}>
+            <Text style={styles.logoutBtnText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Survey list */}
@@ -198,6 +205,11 @@ const styles = StyleSheet.create({
     borderBottomWidth:  1,
     borderBottomColor: '#e5e7eb',
   },
+  toolbarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   title: { fontSize: 22, fontWeight: '800', color: '#111827' },
   exportBtn: {
     backgroundColor: '#1a56db',
@@ -211,6 +223,15 @@ const styles = StyleSheet.create({
   },
   exportBtnDisabled: { backgroundColor: '#93c5fd' },
   exportBtnText:     { color: '#ffffff', fontWeight: '700', fontSize: 13 },
+  logoutBtn: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 8,
+    minHeight: 36,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutBtnText: { color: '#1f2937', fontSize: 13, fontWeight: '700' },
   list:              { padding: 16, paddingBottom: 80 },
   empty: {
     alignItems:  'center',

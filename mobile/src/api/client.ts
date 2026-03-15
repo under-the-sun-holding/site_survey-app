@@ -7,6 +7,33 @@
  */
 import type { Survey, SurveyFormData, ApiSyncResponse, ApiPhotoUploadResponse } from '../types';
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+  username?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  fullName: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  delivery?: 'sent' | 'failed';
+  resetToken?: string;
+  expiresInMinutes?: number;
+}
+
 // ----------------------------------------------------------------
 // Engineering Report types (mirrors backend/src/utils/reportGenerator.ts)
 // ----------------------------------------------------------------
@@ -77,6 +104,58 @@ export async function checkHealth(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ----------------------------------------------------------------
+// Authentication
+// ----------------------------------------------------------------
+
+export async function signIn(identifier: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_URL}/api/users/signin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier, password }),
+  });
+  return handleResponse<AuthResponse>(res);
+}
+
+export async function register(input: RegisterInput): Promise<AuthResponse> {
+  const res = await fetch(`${API_URL}/api/users/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: input.email,
+      password: input.password,
+      full_name: input.fullName,
+    }),
+  });
+  return handleResponse<AuthResponse>(res);
+}
+
+export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+  const res = await fetch(`${API_URL}/api/users/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return handleResponse<ForgotPasswordResponse>(res);
+}
+
+export async function resetPassword(email: string, token: string, newPassword: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/users/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, token, new_password: newPassword }),
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function fetchCurrentUser(token: string): Promise<AuthUser> {
+  const res = await fetch(`${API_URL}/api/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleResponse<{ user: AuthUser }>(res);
+  return data.user;
 }
 
 // ----------------------------------------------------------------
