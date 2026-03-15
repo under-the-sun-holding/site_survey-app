@@ -81,12 +81,21 @@ function inferLanApiUrlFromExpoHost(): string | null {
     expoGoConfig?: { debuggerHost?: string };
   };
 
-  const hostUri = config.expoConfig?.hostUri ?? config.expoGoConfig?.debuggerHost;
-  if (!hostUri) return null;
+  const hostUriRaw = config.expoConfig?.hostUri ?? config.expoGoConfig?.debuggerHost;
+  if (typeof hostUriRaw !== 'string' || hostUriRaw.length === 0) return null;
 
-  const host = hostUri.split(':')[0]?.trim();
+  const host = hostUriRaw.split(':')[0]?.trim();
   if (!host) return null;
   return `http://${host}:3001`;
+}
+
+function uniqueStrings(values: Array<string | null>): string[] {
+  const result: string[] = [];
+  for (const value of values) {
+    if (!value || result.includes(value)) continue;
+    result.push(value);
+  }
+  return result;
 }
 
 const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') || null;
@@ -94,9 +103,7 @@ const inferredLanApiUrl = inferLanApiUrlFromExpoHost();
 
 export const API_URL = configuredApiUrl ?? inferredLanApiUrl ?? 'http://localhost:3001';
 
-const API_CANDIDATES = Array.from(
-  new Set([configuredApiUrl, inferredLanApiUrl, 'http://localhost:3001'].filter(Boolean) as string[])
-);
+const API_CANDIDATES = uniqueStrings([configuredApiUrl, inferredLanApiUrl, 'http://localhost:3001']);
 
 const API_NETWORK_ERROR =
   `Cannot reach API. Tried: ${API_CANDIDATES.join(', ')}. Ensure backend is running and your phone is on the same Wi-Fi as this machine.`;
