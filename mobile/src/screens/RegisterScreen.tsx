@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { PasswordInput, StatusBanner } from '../components/AuthFormHelpers';
+import { API_URL } from '../api/client';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -113,6 +114,7 @@ export default function RegisterScreen() {
             <TouchableOpacity onPress={() => router.replace('/login')} style={styles.linkRow}>
               <Text style={styles.linkText}>Back to Sign In</Text>
             </TouchableOpacity>
+            <Text style={styles.apiHint}>API: {API_URL}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -158,4 +160,5 @@ const styles = StyleSheet.create({
   buttonText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   linkRow: { marginTop: 14, alignItems: 'center' },
   linkText: { color: '#1d4ed8', fontSize: 13, fontWeight: '600' },
+  apiHint: { marginTop: 6, fontSize: 11, color: '#94a3b8', textAlign: 'center' },
 });

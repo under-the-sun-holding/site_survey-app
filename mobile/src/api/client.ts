@@ -77,6 +77,9 @@ export interface EngineeringReport {
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:3001';
 
+const API_NETWORK_ERROR =
+  `Cannot reach API at ${API_URL}. Ensure backend is running and your phone is on the same Wi-Fi as this machine.`;
+
 // ----------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------
@@ -111,25 +114,39 @@ export async function checkHealth(): Promise<boolean> {
 // ----------------------------------------------------------------
 
 export async function signIn(identifier: string, password: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_URL}/api/users/signin`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, password }),
-  });
-  return handleResponse<AuthResponse>(res);
+  try {
+    const res = await fetch(`${API_URL}/api/users/signin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+    });
+    return handleResponse<AuthResponse>(res);
+  } catch (err) {
+    if (err instanceof Error && /^HTTP\s\d+$/.test(err.message)) {
+      throw err;
+    }
+    throw new Error(API_NETWORK_ERROR);
+  }
 }
 
 export async function register(input: RegisterInput): Promise<AuthResponse> {
-  const res = await fetch(`${API_URL}/api/users/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: input.email,
-      password: input.password,
-      full_name: input.fullName,
-    }),
-  });
-  return handleResponse<AuthResponse>(res);
+  try {
+    const res = await fetch(`${API_URL}/api/users/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: input.email,
+        password: input.password,
+        full_name: input.fullName,
+      }),
+    });
+    return handleResponse<AuthResponse>(res);
+  } catch (err) {
+    if (err instanceof Error && /^HTTP\s\d+$/.test(err.message)) {
+      throw err;
+    }
+    throw new Error(API_NETWORK_ERROR);
+  }
 }
 
 export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {

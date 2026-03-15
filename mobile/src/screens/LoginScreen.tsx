@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { PasswordInput, StatusBanner } from '../components/AuthFormHelpers';
+import { API_URL } from '../api/client';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -90,6 +91,7 @@ export default function LoginScreen() {
             </View>
 
             <Text style={styles.hint}>Admin test login: admin / admin123!</Text>
+            <Text style={styles.apiHint}>API: {API_URL}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -139,4 +141,5 @@ const styles = StyleSheet.create({
   },
   linkText: { color: '#1d4ed8', fontSize: 13, fontWeight: '600' },
   hint: { marginTop: 14, fontSize: 12, color: '#64748b' },
+  apiHint: { marginTop: 6, fontSize: 11, color: '#94a3b8' },
 });
