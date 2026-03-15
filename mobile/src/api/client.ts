@@ -102,17 +102,17 @@ const API_NETWORK_ERROR =
   `Cannot reach API. Tried: ${API_CANDIDATES.join(', ')}. Ensure backend is running and your phone is on the same Wi-Fi as this machine.`;
 
 async function fetchWithFallback(path: string, init: RequestInit): Promise<Response> {
-  let lastError: unknown;
+  const requestInit: RequestInit = init.signal ? init : { ...init, signal: AbortSignal.timeout(5_000) };
 
   for (const baseUrl of API_CANDIDATES) {
     try {
-      return await fetch(`${baseUrl}${path}`, init);
-    } catch (err) {
-      lastError = err;
+      return await fetch(`${baseUrl}${path}`, requestInit);
+    } catch {
+      // Try next candidate URL.
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error(API_NETWORK_ERROR);
+  throw new Error(API_NETWORK_ERROR);
 }
 
 // ----------------------------------------------------------------
@@ -149,39 +149,25 @@ export async function checkHealth(): Promise<boolean> {
 // ----------------------------------------------------------------
 
 export async function signIn(identifier: string, password: string): Promise<AuthResponse> {
-  try {
-    const res = await fetchWithFallback('/api/users/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier, password }),
-    });
-    return handleResponse<AuthResponse>(res);
-  } catch (err) {
-    if (err instanceof Error && /^HTTP\s\d+$/.test(err.message)) {
-      throw err;
-    }
-    throw new Error(API_NETWORK_ERROR);
-  }
+  const res = await fetchWithFallback('/api/users/signin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier, password }),
+  });
+  return handleResponse<AuthResponse>(res);
 }
 
 export async function register(input: RegisterInput): Promise<AuthResponse> {
-  try {
-    const res = await fetchWithFallback('/api/users/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: input.email,
-        password: input.password,
-        full_name: input.fullName,
-      }),
-    });
-    return handleResponse<AuthResponse>(res);
-  } catch (err) {
-    if (err instanceof Error && /^HTTP\s\d+$/.test(err.message)) {
-      throw err;
-    }
-    throw new Error(API_NETWORK_ERROR);
-  }
+  const res = await fetchWithFallback('/api/users/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: input.email,
+      password: input.password,
+      full_name: input.fullName,
+    }),
+  });
+  return handleResponse<AuthResponse>(res);
 }
 
 export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
@@ -203,18 +189,11 @@ export async function resetPassword(email: string, token: string, newPassword: s
 }
 
 export async function fetchCurrentUser(token: string): Promise<AuthUser> {
-  try {
-    const res = await fetchWithFallback('/api/users/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await handleResponse<{ user: AuthUser }>(res);
-    return data.user;
-  } catch (err) {
-    if (err instanceof Error && /^HTTP\s\d+$/.test(err.message)) {
-      throw err;
-    }
-    throw new Error(API_NETWORK_ERROR);
-  }
+  const res = await fetchWithFallback('/api/users/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await handleResponse<{ user: AuthUser }>(res);
+  return data.user;
 }
 
 // ----------------------------------------------------------------
