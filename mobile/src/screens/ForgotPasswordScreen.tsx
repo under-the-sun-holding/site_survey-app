@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +15,9 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { PasswordInput, StatusBanner } from '../components/AuthFormHelpers';
+
+const BRAND_PRIMARY = '#6495ed';
+const LOGO_URL = 'https://img1.wsimg.com/isteam/ip/b4ef19f7-7f46-446b-bbe2-755512fcd4f8/UNDER%20THE%20SUN%20LOGO.jpg/:/rs=w:300,h:300,m';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -71,6 +75,7 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
+            <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>Reset Password</Text>
             <Text style={styles.subtitle}>Request a reset token, then set a new password</Text>
 
@@ -142,7 +147,7 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#e7eefc' },
+  screen: { flex: 1, backgroundColor: '#f2f8ff' },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   card: {
@@ -152,9 +157,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#dbe3f3',
+    borderColor: '#cfe0fb',
   },
-  title: { fontSize: 28, fontWeight: '800', color: '#0f172a' },
+  logo: { width: 170, height: 72, alignSelf: 'center', marginBottom: 8 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1e3a5f', textAlign: 'center' },
   subtitle: { fontSize: 14, color: '#475569', marginTop: 6, marginBottom: 18 },
   input: {
     borderWidth: 1,
@@ -169,7 +175,7 @@ const styles = StyleSheet.create({
   button: {
     height: 46,
     borderRadius: 10,
-    backgroundColor: '#1d4ed8',
+    backgroundColor: BRAND_PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -178,15 +184,15 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#1d4ed8',
+    borderColor: BRAND_PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#edf4ff',
   },
-  secondaryButtonText: { color: '#1d4ed8', fontSize: 14, fontWeight: '700' },
+  secondaryButtonText: { color: BRAND_PRIMARY, fontSize: 14, fontWeight: '700' },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   linkRow: { marginTop: 14, alignItems: 'center' },
-  linkText: { color: '#1d4ed8', fontSize: 13, fontWeight: '600' },
+  linkText: { color: BRAND_PRIMARY, fontSize: 13, fontWeight: '600' },
 });
