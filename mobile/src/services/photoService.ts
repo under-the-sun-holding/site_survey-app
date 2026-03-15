@@ -7,7 +7,7 @@
  * Returns the local file path to be stored in SQLite.
  */
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem  from 'expo-file-system';
+import * as FileSystem  from 'expo-file-system/legacy';
 import { v4 as uuidv4 } from 'uuid';
 
 const PHOTOS_DIR = `${FileSystem.documentDirectory}survey-photos/`;

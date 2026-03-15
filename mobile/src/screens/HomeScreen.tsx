@@ -10,9 +10,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, ActivityIndicator,
-  Alert, StyleSheet, SafeAreaView, RefreshControl,
+  Alert, StyleSheet, RefreshControl,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing   from 'expo-sharing';
 import { useFocusEffect, useRouter } from 'expo-router';
 import type { Survey } from '../types';

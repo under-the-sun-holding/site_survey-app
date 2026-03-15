@@ -15,8 +15,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, Alert, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, StyleSheet, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { DEFAULT_CHECKLIST, SURVEY_CATEGORIES } from '../types';
 import type { SurveyMetadata } from '../types';

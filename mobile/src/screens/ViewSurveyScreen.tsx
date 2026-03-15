@@ -9,8 +9,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  ActivityIndicator, Alert, StyleSheet, SafeAreaView,
+  ActivityIndicator, Alert, StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import type { Survey } from '../types';
 import { getSurveyById } from '../database/surveyDb';
