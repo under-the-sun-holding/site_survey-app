@@ -7,7 +7,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deploy": "eas update --branch preview",
+    "deploy-prod": "eas update --branch main",
+    "build": "eas build --platform all"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.0.1",
