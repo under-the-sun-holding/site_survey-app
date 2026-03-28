@@ -8,9 +8,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "deploy": "eas update --branch preview",
-    "deploy-prod": "eas update --branch main",
-    "build": "eas build --platform all"
+    "deploy": "EXPO_NO_DOTENV=1 eas update --branch preview --environment preview",
+    "deploy-prod": "EXPO_NO_DOTENV=1 eas update --branch main --environment production",
+    "build": "EXPO_NO_DOTENV=1 eas build --platform all --environment production"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.0.1",
