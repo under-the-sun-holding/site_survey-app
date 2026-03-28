@@ -17,9 +17,38 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { API_URL } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { convertPitchToDegrees } from "../services/pitch";
 
 interface UploadResponse {
   filePath: string;
+}
+
+function getPitchPreview(value: string): {
+  degrees: number | null;
+  error: string | null;
+} {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { degrees: null, error: null };
+  }
+
+  if (trimmed.includes("/")) {
+    try {
+      return { degrees: convertPitchToDegrees(trimmed), error: null };
+    } catch {
+      return {
+        degrees: null,
+        error: "Invalid ratio. Use Rise/Run like 5/12.",
+      };
+    }
+  }
+
+  const numeric = Number(trimmed);
+  if (!Number.isFinite(numeric)) {
+    return { degrees: null, error: "Enter degrees or ratio like 5/12." };
+  }
+
+  return { degrees: numeric, error: null };
 }
 
 export default function NewSurveyScreen() {
@@ -30,6 +59,8 @@ export default function NewSurveyScreen() {
   const [azimuth, setAzimuth] = useState("");
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const pitchPreview = getPitchPreview(roofPitch);
 
   async function capturePhoto() {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -55,7 +86,22 @@ export default function NewSurveyScreen() {
     pitchValue: number;
     azimuthValue: number;
   } | null {
-    const pitchValue = Number(roofPitch);
+    const trimmedPitch = roofPitch.trim();
+    let pitchValue: number;
+
+    try {
+      pitchValue = trimmedPitch.includes("/")
+        ? convertPitchToDegrees(trimmedPitch)
+        : Number(trimmedPitch);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Invalid pitch format. Use 'Rise/Run' (e.g., 4/12)";
+      Alert.alert("Validation Error", message);
+      return null;
+    }
+
     const azimuthValue = Number(azimuth);
 
     if (!Number.isFinite(pitchValue) || pitchValue < 0 || pitchValue > 90) {
@@ -180,10 +226,16 @@ export default function NewSurveyScreen() {
             style={styles.input}
             value={roofPitch}
             onChangeText={setRoofPitch}
-            keyboardType="numeric"
-            placeholder="Enter roof pitch (0-90)"
+            placeholder="Enter roof pitch (degrees or 4/12)"
             placeholderTextColor="#9ca3af"
           />
+          {pitchPreview.error ? (
+            <Text style={styles.pitchErrorText}>{pitchPreview.error}</Text>
+          ) : pitchPreview.degrees != null ? (
+            <Text style={styles.pitchPreviewText}>
+              Calculated angle: {pitchPreview.degrees.toFixed(2)}°
+            </Text>
+          ) : null}
 
           <Text style={styles.label}>Azimuth</Text>
           <TextInput
@@ -278,6 +330,18 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     fontSize: 13,
     marginBottom: 10,
+  },
+  pitchPreviewText: {
+    color: "#86efac",
+    fontSize: 13,
+    marginTop: -4,
+    marginBottom: 8,
+  },
+  pitchErrorText: {
+    color: "#fca5a5",
+    fontSize: 13,
+    marginTop: -4,
+    marginBottom: 8,
   },
   submitButton: {
     borderRadius: 10,
