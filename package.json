@@ -8,20 +8,18 @@
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:mobile": "npm run start --prefix mobile",
-
+    "eas:build:configure": "cd mobile && npx eas build:configure",
+    "eas:build": "cd mobile && npx eas build",
+    "eas:submit": "cd mobile && npx eas submit",
     "setup:local": "node scripts/setup-local.js",
-
     "dev:local": "node scripts/setup-local.js && npm install --prefix backend && npm install --prefix mobile && docker compose up -d --wait db && concurrently --names \"backend,mobile\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run start --prefix mobile\"",
     "dev:docker": "docker compose up --build",
-
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "test": "npm test --prefix backend",
-
     "install:all": "npm install --prefix backend && npm install --prefix frontend && npm install --prefix mobile",
     "install:backend": "npm install --prefix backend",
     "install:frontend": "npm install --prefix frontend",
     "install:mobile": "npm install --prefix mobile",
-
     "docker:up": "docker compose up -d",
     "docker:up:build": "docker compose up --build -d",
     "docker:down": "docker compose down",
