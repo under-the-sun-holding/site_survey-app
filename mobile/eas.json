@@ -1,11 +1,17 @@
 {
   "build": {
     "development": {
+      "env": {
+        "ORG_GRADLE_PROJECT_AsyncStorage_useNextStorage": "false"
+      },
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
       "channel": "preview",
+      "env": {
+        "ORG_GRADLE_PROJECT_AsyncStorage_useNextStorage": "false"
+      },
       "environment": "preview",
       "distribution": "internal",
       "android": {
@@ -14,6 +20,9 @@
     },
     "production": {
       "channel": "production",
+      "env": {
+        "ORG_GRADLE_PROJECT_AsyncStorage_useNextStorage": "false"
+      },
       "environment": "production"
     }
   }
