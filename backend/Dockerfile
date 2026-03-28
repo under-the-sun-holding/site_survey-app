@@ -13,6 +13,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache bash git
+
 # Copy dependency manifests first for layer-caching
 COPY package.json package-lock.json ./
 
@@ -29,6 +31,8 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 
 WORKDIR /app
+
+RUN apk add --no-cache bash git
 
 # Only copy production-relevant manifests
 COPY package.json package-lock.json ./
