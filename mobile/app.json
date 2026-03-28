@@ -58,7 +58,6 @@
       ]
     ],
     "extra": {
-      "apiUrl": "http://localhost:3001",
       "router": {},
       "eas": {
         "projectId": "aed7aae8-7d55-47e1-8850-c6b0040c99b5"

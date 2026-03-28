@@ -5,14 +5,19 @@
  * In development the server runs on localhost:3001.
  * In production set EXPO_PUBLIC_API_URL in your Expo environment.
  */
-import Constants from 'expo-constants';
-import type { Survey, SurveyFormData, ApiSyncResponse, ApiPhotoUploadResponse } from '../types';
+import Constants from "expo-constants";
+import type {
+  Survey,
+  SurveyFormData,
+  ApiSyncResponse,
+  ApiPhotoUploadResponse,
+} from "../types";
 
 export interface AuthUser {
   id: string;
   email: string;
   fullName: string;
-  role: 'admin' | 'user';
+  role: "admin" | "user";
   createdAt: string;
   username?: string;
 }
@@ -30,7 +35,7 @@ export interface RegisterInput {
 
 export interface ForgotPasswordResponse {
   message: string;
-  delivery?: 'sent' | 'failed';
+  delivery?: "sent" | "failed";
   resetToken?: string;
   expiresInMinutes?: number;
 }
@@ -39,52 +44,77 @@ export interface ForgotPasswordResponse {
 // Engineering Report types (mirrors backend/src/utils/reportGenerator.ts)
 // ----------------------------------------------------------------
 
-export type FlagPriority = 'High' | 'Medium' | 'Low';
-export type OverallRisk  = 'High' | 'Medium' | 'Low' | 'None';
+export type FlagPriority = "High" | "Medium" | "Low";
+export type OverallRisk = "High" | "Medium" | "Low" | "None";
 
 export interface ReportFlag {
   priority: FlagPriority;
   category: string;
-  field?:   string;
-  message:  string;
+  field?: string;
+  message: string;
 }
 
 export interface ChecklistSummary {
-  total:   number;
-  pass:    number;
-  fail:    number;
-  na:      number;
+  total: number;
+  pass: number;
+  fail: number;
+  na: number;
   pending: number;
 }
 
 export interface EngineeringReport {
-  survey_id:         string;
-  project_name:      string;
-  site_name:         string;
-  site_address:      string | null;
-  inspector_name:    string;
-  category:          string | null;
-  latitude:          number | null;
-  longitude:         number | null;
-  survey_date:       string;
-  generated_at:      string;
-  overall_risk:      OverallRisk;
-  flags:             ReportFlag[];
+  survey_id: string;
+  project_name: string;
+  site_name: string;
+  site_address: string | null;
+  inspector_name: string;
+  category: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  survey_date: string;
+  generated_at: string;
+  overall_risk: OverallRisk;
+  flags: ReportFlag[];
   checklist_summary: ChecklistSummary;
-  recommendations:   string[];
-  metadata:          Record<string, unknown> | null;
+  recommendations: string[];
+  metadata: Record<string, unknown> | null;
+}
+
+type ExpoConstantsConfig = {
+  expoConfig?: {
+    hostUri?: string;
+    extra?: {
+      apiUrl?: string;
+    };
+  };
+  expoGoConfig?: { debuggerHost?: string };
+};
+
+const isDevelopmentRuntime =
+  typeof __DEV__ !== "undefined"
+    ? __DEV__
+    : process.env.NODE_ENV !== "production";
+
+function normalizeApiUrl(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+
+  const normalized = value.trim().replace(/\/$/, "");
+  return normalized.length > 0 ? normalized : null;
+}
+
+function readExpoExtraApiUrl(): string | null {
+  const config = Constants as unknown as ExpoConstantsConfig;
+  return normalizeApiUrl(config.expoConfig?.extra?.apiUrl);
 }
 
 function inferLanApiUrlFromExpoHost(): string | null {
-  const config = Constants as unknown as {
-    expoConfig?: { hostUri?: string };
-    expoGoConfig?: { debuggerHost?: string };
-  };
+  const config = Constants as unknown as ExpoConstantsConfig;
 
-  const hostUriRaw = config.expoConfig?.hostUri ?? config.expoGoConfig?.debuggerHost;
-  if (typeof hostUriRaw !== 'string' || hostUriRaw.length === 0) return null;
+  const hostUriRaw =
+    config.expoConfig?.hostUri ?? config.expoGoConfig?.debuggerHost;
+  if (typeof hostUriRaw !== "string" || hostUriRaw.length === 0) return null;
 
-  const host = hostUriRaw.split(':')[0]?.trim();
+  const host = hostUriRaw.split(":")[0]?.trim();
   if (!host) return null;
   return `http://${host}:3001`;
 }
@@ -98,18 +128,27 @@ function uniqueStrings(values: Array<string | null>): string[] {
   return result;
 }
 
-const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') || null;
-const inferredLanApiUrl = inferLanApiUrlFromExpoHost();
+const configuredApiUrl = normalizeApiUrl(process.env.EXPO_PUBLIC_API_URL);
+const developmentFallbackApiUrl = isDevelopmentRuntime
+  ? (readExpoExtraApiUrl() ??
+    inferLanApiUrlFromExpoHost() ??
+    "http://localhost:3001")
+  : null;
 
-export const API_URL = configuredApiUrl ?? inferredLanApiUrl ?? 'http://localhost:3001';
+export const API_URL = configuredApiUrl ?? developmentFallbackApiUrl ?? "";
 
-const API_CANDIDATES = uniqueStrings([configuredApiUrl, inferredLanApiUrl, 'http://localhost:3001']);
+const API_CANDIDATES = uniqueStrings([
+  configuredApiUrl,
+  developmentFallbackApiUrl,
+]);
 
 const API_NETWORK_ERROR =
-  `Cannot reach API. Tried: ${API_CANDIDATES.join(', ')}. Ensure backend is running and your phone is on the same Wi-Fi as this machine.`;
+  API_CANDIDATES.length > 0
+    ? `Cannot reach API. Tried: ${API_CANDIDATES.join(", ")}.${isDevelopmentRuntime ? " Ensure backend is running and your phone is on the same Wi-Fi as this machine." : ""}`
+    : "API is not configured for this build. Set EXPO_PUBLIC_API_URL for your production EAS environment, then rebuild or publish an update.";
 
 function withTimeoutSignal(init: RequestInit, timeoutMs = 5_000): RequestInit {
-  if (init.signal || typeof AbortController === 'undefined') {
+  if (init.signal || typeof AbortController === "undefined") {
     return init;
   }
 
@@ -118,7 +157,14 @@ function withTimeoutSignal(init: RequestInit, timeoutMs = 5_000): RequestInit {
   return { ...init, signal: controller.signal };
 }
 
-async function fetchWithFallback(path: string, init: RequestInit): Promise<Response> {
+async function fetchWithFallback(
+  path: string,
+  init: RequestInit,
+): Promise<Response> {
+  if (API_CANDIDATES.length === 0) {
+    throw new Error(API_NETWORK_ERROR);
+  }
+
   for (const baseUrl of API_CANDIDATES) {
     try {
       return await fetch(`${baseUrl}${path}`, withTimeoutSignal(init));
@@ -138,9 +184,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
     try {
-      const body = await res.json() as { error?: string };
+      const body = (await res.json()) as { error?: string };
       if (body.error) message = body.error;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     throw new Error(message);
   }
   return res.json() as Promise<T>;
@@ -152,7 +200,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export async function checkHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_URL}/api/health`, withTimeoutSignal({}));
+    const res = await fetchWithFallback("/api/health", {});
     return res.ok;
   } catch {
     return false;
@@ -163,19 +211,22 @@ export async function checkHealth(): Promise<boolean> {
 // Authentication
 // ----------------------------------------------------------------
 
-export async function signIn(identifier: string, password: string): Promise<AuthResponse> {
-  const res = await fetchWithFallback('/api/users/signin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+export async function signIn(
+  identifier: string,
+  password: string,
+): Promise<AuthResponse> {
+  const res = await fetchWithFallback("/api/users/signin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ identifier, password }),
   });
   return handleResponse<AuthResponse>(res);
 }
 
 export async function register(input: RegisterInput): Promise<AuthResponse> {
-  const res = await fetchWithFallback('/api/users/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetchWithFallback("/api/users/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email: input.email,
       password: input.password,
@@ -185,26 +236,32 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
   return handleResponse<AuthResponse>(res);
 }
 
-export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-  const res = await fetch(`${API_URL}/api/users/forgot-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+export async function forgotPassword(
+  email: string,
+): Promise<ForgotPasswordResponse> {
+  const res = await fetchWithFallback("/api/users/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
   });
   return handleResponse<ForgotPasswordResponse>(res);
 }
 
-export async function resetPassword(email: string, token: string, newPassword: string): Promise<{ message: string }> {
-  const res = await fetch(`${API_URL}/api/users/reset-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+export async function resetPassword(
+  email: string,
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const res = await fetchWithFallback("/api/users/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, token, new_password: newPassword }),
   });
   return handleResponse<{ message: string }>(res);
 }
 
 export async function fetchCurrentUser(token: string): Promise<AuthUser> {
-  const res = await fetchWithFallback('/api/users/me', {
+  const res = await fetchWithFallback("/api/users/me", {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await handleResponse<{ user: AuthUser }>(res);
@@ -216,11 +273,14 @@ export async function fetchCurrentUser(token: string): Promise<AuthUser> {
 // ----------------------------------------------------------------
 
 export interface ApiCategory {
-  id: string; name: string; description: string | null; color: string;
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
 }
 
 export async function fetchCategories(): Promise<ApiCategory[]> {
-  const res = await fetch(`${API_URL}/api/categories`);
+  const res = await fetchWithFallback("/api/categories", {});
   const data = await handleResponse<{ categories: ApiCategory[] }>(res);
   return data.categories;
 }
@@ -230,32 +290,34 @@ export async function fetchCategories(): Promise<ApiCategory[]> {
 // ----------------------------------------------------------------
 
 /** POST a single survey — used for initial create during sync. */
-export async function postSurvey(survey: SurveyFormData & { id: string }): Promise<Survey> {
-  const res = await fetch(`${API_URL}/api/surveys`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      id:             survey.id,
-      project_name:   survey.project_name,
-      category_id:    survey.category_id,
-      category_name:  survey.category_name,
+export async function postSurvey(
+  survey: SurveyFormData & { id: string },
+): Promise<Survey> {
+  const res = await fetchWithFallback("/api/surveys", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: survey.id,
+      project_name: survey.project_name,
+      category_id: survey.category_id,
+      category_name: survey.category_name,
       inspector_name: survey.inspector_name,
-      site_name:      survey.site_name,
-      site_address:   survey.site_address,
-      latitude:       survey.latitude,
-      longitude:      survey.longitude,
-      gps_accuracy:   survey.gps_accuracy,
-      survey_date:    survey.survey_date,
-      notes:          survey.notes,
-      status:         'submitted',
-      device_id:      survey.device_id,
+      site_name: survey.site_name,
+      site_address: survey.site_address,
+      latitude: survey.latitude,
+      longitude: survey.longitude,
+      gps_accuracy: survey.gps_accuracy,
+      survey_date: survey.survey_date,
+      notes: survey.notes,
+      status: "submitted",
+      device_id: survey.device_id,
       /** Category-specific metadata (Ground Mount / Roof Mount / Solar Fencing) */
-      metadata:       survey.metadata ?? null,
+      metadata: survey.metadata ?? null,
       // Checklist items are sent with the survey for atomic creation
-      checklist: (survey.checklist ?? []).map(c => ({
-        label:  c.label,
+      checklist: (survey.checklist ?? []).map((c) => ({
+        label: c.label,
         status: c.status,
-        notes:  c.notes,
+        notes: c.notes,
       })),
     }),
   });
@@ -268,25 +330,25 @@ export async function postSurvey(survey: SurveyFormData & { id: string }): Promi
  */
 export async function uploadPhotos(
   surveyId: string,
-  photos:   Array<{ uri: string; label: string; mimeType?: string }>
+  photos: Array<{ uri: string; label: string; mimeType?: string }>,
 ): Promise<ApiPhotoUploadResponse> {
   const form = new FormData();
 
   const labels: string[] = [];
   for (const photo of photos) {
     // React Native FormData accepts an object with uri/type/name
-    form.append('photos', {
-      uri:  photo.uri,
-      type: photo.mimeType ?? 'image/jpeg',
-      name: photo.uri.split('/').pop() ?? 'photo.jpg',
+    form.append("photos", {
+      uri: photo.uri,
+      type: photo.mimeType ?? "image/jpeg",
+      name: photo.uri.split("/").pop() ?? "photo.jpg",
     } as unknown as Blob);
     labels.push(photo.label);
   }
-  form.append('labels', JSON.stringify(labels));
+  form.append("labels", JSON.stringify(labels));
 
-  const res = await fetch(`${API_URL}/api/surveys/${surveyId}/photos`, {
-    method: 'POST',
-    body:   form,
+  const res = await fetchWithFallback(`/api/surveys/${surveyId}/photos`, {
+    method: "POST",
+    body: form,
     // Do NOT manually set Content-Type — fetch sets it with the boundary
   });
   return handleResponse<ApiPhotoUploadResponse>(res);
@@ -295,12 +357,12 @@ export async function uploadPhotos(
 /** POST /api/surveys/sync — batch offline sync. */
 export async function batchSync(payload: {
   device_id: string;
-  surveys:   Array<{ action: 'create' | 'update'; survey: Survey }>;
+  surveys: Array<{ action: "create" | "update"; survey: Survey }>;
 }): Promise<ApiSyncResponse> {
-  const res = await fetch(`${API_URL}/api/surveys/sync`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(payload),
+  const res = await fetchWithFallback("/api/surveys/sync", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
   return handleResponse<ApiSyncResponse>(res);
 }
@@ -313,8 +375,10 @@ export async function batchSync(payload: {
  * GET /api/surveys/:id/report
  * Returns the EngineeringReport JSON for a survey.
  */
-export async function fetchReport(surveyId: string): Promise<EngineeringReport> {
-  const res = await fetch(`${API_URL}/api/surveys/${surveyId}/report`);
+export async function fetchReport(
+  surveyId: string,
+): Promise<EngineeringReport> {
+  const res = await fetchWithFallback(`/api/surveys/${surveyId}/report`, {});
   return handleResponse<EngineeringReport>(res);
 }
 
@@ -322,14 +386,21 @@ export async function fetchReport(surveyId: string): Promise<EngineeringReport> 
  * GET /api/surveys/:id/report?format=markdown
  * Downloads the Markdown report text.
  */
-export async function downloadReportMarkdown(surveyId: string): Promise<string> {
-  const res = await fetch(`${API_URL}/api/surveys/${surveyId}/report?format=markdown`);
+export async function downloadReportMarkdown(
+  surveyId: string,
+): Promise<string> {
+  const res = await fetchWithFallback(
+    `/api/surveys/${surveyId}/report?format=markdown`,
+    {},
+  );
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
     try {
-      const body = await res.json() as { error?: string };
+      const body = (await res.json()) as { error?: string };
       if (body.error) message = body.error;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     throw new Error(message);
   }
   return res.text();
