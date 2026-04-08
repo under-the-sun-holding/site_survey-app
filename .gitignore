@@ -36,6 +36,7 @@ backend/uploads/
 Thumbs.db
 .idea/
 .vscode/
+.vs/
 *.swp
 *.swo
 
