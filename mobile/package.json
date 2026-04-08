@@ -4,9 +4,9 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "sh ./scripts/run-android-safe.sh",
+    "android": "node ./scripts/run-android-safe.js",
     "android:unsafe": "expo run:android",
-    "android:check-tooling": "sh ./scripts/check-android-tooling.sh",
+    "android:check-tooling": "node ./scripts/check-android-tooling.js",
     "android:prebuild": "expo prebuild --platform android",
     "android:eas": "EXPO_NO_DOTENV=1 eas build --platform android --profile development",
     "ios": "expo run:ios",
