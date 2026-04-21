@@ -22,19 +22,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   openjdk-17-jre-headless \
   && rm -rf /var/lib/apt/lists/*
 
-ENV ANDROID_HOME=/home/node/android-sdk
-ENV ANDROID_SDK_ROOT=/home/node/android-sdk
-ENV PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-
 # Copy dependency manifests first for layer-caching
-COPY package.json package-lock.json ./
+COPY backend/package.json backend/package-lock.json ./
 
 # Install ALL deps (including devDeps such as typescript / ts-jest)
 RUN npm ci
 
 # Copy the source tree and compile
-COPY tsconfig.json ./
-COPY src/ ./src/
+COPY backend/tsconfig.json ./
+COPY backend/src/ ./src/
 
 RUN npm run build
 
@@ -51,7 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # Only copy production-relevant manifests
-COPY package.json package-lock.json ./
+COPY backend/package.json backend/package-lock.json ./
 
 # Install ONLY production deps
 RUN npm ci --omit=dev
