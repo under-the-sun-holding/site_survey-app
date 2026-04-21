@@ -1,7 +1,7 @@
 {
   "name": "site_survey-app",
   "build": {
-    "dockerfile": "../backend/Dockerfile",
+    "dockerfile": "../Dockerfile",
     "context": "..",
     "target": "builder"
   },
