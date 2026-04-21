@@ -9,7 +9,7 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
-  "remoteUser": "node",
+  "remoteUser": "root",
   "overrideCommand": true,
   "updateRemoteUserUID": true
 }
