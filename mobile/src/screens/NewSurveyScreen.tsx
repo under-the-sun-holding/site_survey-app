@@ -15,21 +15,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
-import axios from "axios";
-import { API_URL } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useAppBootstrap } from "../context/AppBootstrapContext";
+import { createSurvey } from "../database/surveyDb";
+import type { SurveyFormData } from "../types";
 import { convertPitchToDegrees } from "../services/pitch";
-import { uploadInferAndSyncSurveyPhotos } from "../services/photoInferencePipeline";
 import { solarProTheme } from "../theme/solarProTheme";
 
 const { colors } = solarProTheme;
 const AUTO_SAVE_INTERVAL_MS = 300_000;
 const DRAFTS_DIR = `${FileSystem.documentDirectory}survey-drafts/`;
-
-interface CreatedSurveyResponse {
-  id: string;
-  project_id?: string | null;
-}
 
 interface NewSurveyDraft {
   saved_at: string;
@@ -69,7 +64,8 @@ function getPitchPreview(value: string): {
 
 export default function NewSurveyScreen() {
   const router = useRouter();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
+  const { deviceId } = useAppBootstrap();
 
   const [roofPitch, setRoofPitch] = useState("");
   const [azimuth, setAzimuth] = useState("");
@@ -203,82 +199,68 @@ export default function NewSurveyScreen() {
   }
 
   async function submitSurvey() {
-    if (!token) {
-      Alert.alert(
-        "Authentication Required",
-        "Please sign in before creating a survey.",
-      );
-      return;
-    }
-
     const values = validateInputs();
     if (!values) return;
 
+    if (!deviceId) {
+      Alert.alert("Device Error", "Device identity is not ready yet. Please try again in a moment.");
+      return;
+    }
+
     setSubmitting(true);
     try {
+      const now = new Date().toISOString();
       const noteParts = [`Roof pitch: ${values.pitchValue}°`];
       if (photoUri) {
         noteParts.push("Photo captured on device");
       }
 
-      // Create survey
-      const surveyResponse = await axios.post<CreatedSurveyResponse>(
-        `${API_URL}/api/surveys`,
-        {
-          project_name: "Mobile Photo Capture",
-          inspector_name: user?.fullName ?? "Mobile Inspector",
-          site_name: "Solar Site",
-          category_name: "Electrical",
-          status: "draft",
-          notes: noteParts.join(" | "),
-          metadata: {
-            type: "roof_mount",
-            azimuth: values.azimuthValue,
-          },
+      const payload: SurveyFormData = {
+        project_name: "Mobile Photo Capture",
+        category_id: "roof_mount",
+        category_name: "Roof Mount",
+        inspector_name: user?.fullName ?? "Mobile Inspector",
+        site_name: "Solar Site",
+        site_address: "",
+        latitude: null,
+        longitude: null,
+        gps_accuracy: null,
+        survey_date: now,
+        notes: noteParts.join(" | "),
+        status: "draft",
+        device_id: deviceId,
+        metadata: {
+          type: "roof_mount",
+          roof_material: null,
+          rafter_size: null,
+          rafter_spacing: null,
+          roof_age_years: null,
+          azimuth: values.azimuthValue,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      const surveyId = surveyResponse.data.id;
-
-      // Upload/inference is best-effort; survey creation should still succeed
-      // even if downstream analysis fails.
-      if (photoUri) {
-        try {
-          await uploadInferAndSyncSurveyPhotos({
-            surveyId,
-            projectId: surveyResponse.data.project_id ?? surveyId,
-            authToken: token,
-            photos: [
+        checklist: [],
+        photos: photoUri
+          ? [
               {
-                uri: photoUri,
+                file_path: photoUri,
                 label: "Roof Photo",
-                mimeType: "image/jpeg",
+                mime_type: "image/jpeg",
+                captured_at: now,
               },
-            ],
-            roofType: "shingle",
-          });
-        } catch (pipelineError) {
-          console.warn("Photo inference pipeline failed:", pipelineError);
-        }
-      }
+            ]
+          : [],
+      };
+
+      const created = await createSurvey(payload, deviceId);
 
       // Remove local draft after successful submit
       if (draftFileUri) {
         await FileSystem.deleteAsync(draftFileUri, { idempotent: true });
       }
 
-      Alert.alert("Success", "Survey created successfully!");
-      router.push({ pathname: '/survey/[id]', params: { id: surveyId } });
+      Alert.alert("Success", "Survey saved locally and queued for sync.");
+      router.push({ pathname: '/survey/[id]', params: { id: created.id } });
     } catch (error) {
-      const message = axios.isAxiosError(error)
-        ? ((error.response?.data?.error as string | undefined) ?? error.message)
-        : "Failed to create survey";
+      const message = error instanceof Error ? error.message : "Failed to create survey";
       Alert.alert("Error", message);
     } finally {
       setSubmitting(false);
