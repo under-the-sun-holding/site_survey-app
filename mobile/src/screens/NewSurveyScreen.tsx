@@ -274,21 +274,26 @@ export default function NewSurveyScreen() {
 
       const surveyId = surveyResponse.data.id;
 
-      // Upload and infer photos
+      // Upload/inference is best-effort; survey creation should still succeed
+      // even if downstream analysis fails.
       if (photoUri) {
-        await uploadInferAndSyncSurveyPhotos({
-          surveyId,
-          projectId: surveyResponse.data.project_id ?? surveyId,
-          authToken: token,
-          photos: [
-            {
-              uri: photoUri,
-              label: "Roof Photo",
-              mimeType: "image/jpeg",
-            },
-          ],
-          roofType: "shingle",
-        });
+        try {
+          await uploadInferAndSyncSurveyPhotos({
+            surveyId,
+            projectId: surveyResponse.data.project_id ?? surveyId,
+            authToken: token,
+            photos: [
+              {
+                uri: photoUri,
+                label: "Roof Photo",
+                mimeType: "image/jpeg",
+              },
+            ],
+            roofType: "shingle",
+          });
+        } catch (pipelineError) {
+          console.warn("Photo inference pipeline failed:", pipelineError);
+        }
       }
 
       // Remove local draft after successful submit
@@ -296,8 +301,8 @@ export default function NewSurveyScreen() {
         await FileSystem.deleteAsync(draftFileUri, { idempotent: true });
       }
 
-      Alert.alert("Success", "Survey created and photos analyzed!");
-      router.push(`/surveys/${surveyId}`);
+      Alert.alert("Success", "Survey created successfully!");
+      router.push({ pathname: '/survey/[id]', params: { id: surveyId } });
     } catch (error) {
       const message = axios.isAxiosError(error)
         ? ((error.response?.data?.error as string | undefined) ?? error.message)
